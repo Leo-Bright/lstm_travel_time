@@ -22,11 +22,19 @@ with open(emb, 'r') as emb_file:
             continue
         osmid_embeddings[osmid] = node_vec
 
+r = 4000
 samples = []
 targets = []
-print('=============22222222===========')
+zero_list = [0 for i in range(128)]
+print('=============11111111===========')
 with open(samples_file, 'r') as sam_file:
+    line_count = 0
     for line in sam_file:
+        if len(samples) >= r:
+            break
+        line_count += 1
+        if line_count % 1000 == 0:
+            print('line_count:', line_count)
         line = line.strip()
         nodes_time = line.split(' ')
         length = len(nodes_time)
@@ -39,15 +47,18 @@ with open(samples_file, 'r') as sam_file:
                 bag_line = True
                 break
             node_embeddings = osmid_embeddings[node]
-            sample.append(node_embeddings)
-
+            tmp_emb = [float(ele) for ele in node_embeddings]
+            sample.append(tmp_emb)
+        while len(sample) < 1000:
+            tmp_zero = zero_list.copy()
+            sample.append(tmp_zero)
         if bag_line:
             continue
         else:
             targets.append(nodes_time[-1])
             samples.append(sample)
 
-print('=============111111===========')
+print('=============22222222===========')
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 # step = 0.15
@@ -63,18 +74,20 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 #     result.append(data[index: index + sequence_length])
 
 # samples: 1-dimension is sample, 2-dimension is node, 3-dimension is embedding
-samples = np.array(samples)
-targets = np.array(targets)
 
-row = round(0.9 * samples.shape[0])
 
 assert len(samples) == len(targets)
 
-x_train = samples[:int(row), :, :]
+samples = np.array(samples)
+targets = np.array(targets)
+print(samples)
+row = round(0.9 * samples.shape[0])
+
+x_train = samples[:int(row)]
 y_train = targets[:int(row)]
 
-x_test = samples[int(row):, :, :]
-y_test = targets[int(row)]
+x_test = samples[int(row):]
+y_test = targets[int(row):]
 
 # LSTM层的输入必须是三维的
 # x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
@@ -85,7 +98,7 @@ y_test = targets[int(row)]
 HIDDEN_DIM = 512
 LAYER_NUM = 10
 model = Sequential()
-model.add(Masking(mask_value=0, input_shape=(1000, 128)))
+# model.add(Masking(mask_value=0, input_shape=(1000, 128)))
 model.add(LSTM(50, input_shape=(1000, 128), return_sequences=True))
 model.add(LSTM(100, return_sequences=False))
 model.add(Dense(1))
