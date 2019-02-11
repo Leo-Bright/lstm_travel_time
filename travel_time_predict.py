@@ -79,36 +79,38 @@ model = Sequential()
 model.add(LSTM(100, input_shape=(1000, 128), return_sequences=True))
 model.add(LSTM(100, return_sequences=False))
 model.add(Dense(1))
-model.add(Activation('tanh'))
+model.add(Activation('linear'))
 model.compile(loss="mae", optimizer="rmsprop")
 model.summary()
 BATCH_SIZE = 32
 epoch = 2
 model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.05)
+metri = model.evaluate(x_test, y_test)
+print(metri)
+
 
 # start with first frame
-curr_frame = x_test[0]
+# curr_frame = x_test[0]
 
 # start with zeros
 # curr_frame = np.zeros((100,1))
 
-predicted = []
+# predicted = []
 
 # for i in range(len(x_test)):
 #     predicted.append(model.predict(curr_frame[newaxis, :, :])[0, 0])
 #     curr_frame = curr_frame[1:]
 #     curr_frame = np.insert(curr_frame, [SEQ_LENGTH - 1], predicted[-1], axis=0)
 
-predicted1 = model.predict(x_test)
-metri = model.evaluate(x_test, y_test)
-print(metri)
-predicted1 = np.reshape(predicted1, (predicted1.size,))
+# predicted1 = model.predict(x_test)
 
-plt.figure(1)
-plt.subplot(211)
-plt.plot(predicted)
-plt.plot(y_test)
-plt.subplot(212)
-plt.plot(predicted1)
-plt.plot(y_test)
-plt.show()
+# predicted1 = np.reshape(predicted1, (predicted1.size,))
+
+# plt.figure(1)
+# plt.subplot(211)
+# plt.plot(predicted)
+# plt.plot(y_test)
+# plt.subplot(212)
+# plt.plot(predicted1)
+# plt.plot(y_test)
+# plt.show()
