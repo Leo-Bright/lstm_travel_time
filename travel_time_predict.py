@@ -26,7 +26,7 @@ r = 4000
 samples = []
 targets = []
 zero_list = [0 for i in range(128)]
-print('=============11111111===========')
+
 with open(samples_file, 'r') as sam_file:
     line_count = 0
     for line in sam_file:
@@ -58,24 +58,7 @@ with open(samples_file, 'r') as sam_file:
             targets.append(nodes_time[-1])
             samples.append(sample)
 
-print('=============22222222===========')
-
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
-# step = 0.15
-# steps = 750
-# x = np.arange(0, steps, step)
-# data = np.sin(x)
-# print(data)
-# SEQ_LENGTH = 100
-# sequence_length = SEQ_LENGTH + 1
-# result = []
-
-# for index in range(len(data) - sequence_length):
-#     result.append(data[index: index + sequence_length])
-
-# samples: 1-dimension is sample, 2-dimension is node, 3-dimension is embedding
-
 
 assert len(samples) == len(targets)
 
@@ -90,21 +73,17 @@ x_test = samples[int(row):]
 y_test = targets[int(row):]
 
 # LSTM层的输入必须是三维的
-# x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-# x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
-# print(x_train)
-
 # Neural Network model
 model = Sequential()
 # model.add(Masking(mask_value=0, input_shape=(1000, 128)))
-model.add(LSTM(50, input_shape=(1000, 128), return_sequences=False))
-# model.add(LSTM(100, return_sequences=False))
+model.add(LSTM(100, input_shape=(1000, 128), return_sequences=True))
+model.add(LSTM(100, return_sequences=False))
 model.add(Dense(1))
-model.add(Activation('sigmoid'))
+model.add(Activation('tanh'))
 model.compile(loss="mae", optimizer="rmsprop")
 model.summary()
 BATCH_SIZE = 32
-epoch = 1
+epoch = 2
 model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.05)
 
 # start with first frame
