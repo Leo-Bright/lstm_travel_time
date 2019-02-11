@@ -38,7 +38,7 @@ with open(samples_file, 'r') as sam_file:
         line = line.strip()
         nodes_time = line.split(' ')
         length = len(nodes_time)
-        if 10 > length > 1000:
+        if 10 > length or length > 1000:
             continue
         sample = []
         bag_line = False
@@ -59,6 +59,7 @@ with open(samples_file, 'r') as sam_file:
             samples.append(sample)
 
 print('=============22222222===========')
+
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 # step = 0.15
@@ -80,7 +81,6 @@ assert len(samples) == len(targets)
 
 samples = np.array(samples)
 targets = np.array(targets)
-print(samples)
 row = round(0.9 * samples.shape[0])
 
 x_train = samples[:int(row)]
@@ -95,15 +95,13 @@ y_test = targets[int(row):]
 # print(x_train)
 
 # Neural Network model
-HIDDEN_DIM = 512
-LAYER_NUM = 10
 model = Sequential()
 # model.add(Masking(mask_value=0, input_shape=(1000, 128)))
-model.add(LSTM(50, input_shape=(1000, 128), return_sequences=True))
-model.add(LSTM(100, return_sequences=False))
+model.add(LSTM(50, input_shape=(1000, 128), return_sequences=False))
+# model.add(LSTM(100, return_sequences=False))
 model.add(Dense(1))
-model.add(Activation('linear'))
-model.compile(loss="mse", optimizer="rmsprop")
+model.add(Activation('sigmoid'))
+model.compile(loss="mae", optimizer="rmsprop")
 model.summary()
 BATCH_SIZE = 32
 epoch = 1
@@ -130,7 +128,7 @@ predicted1 = np.reshape(predicted1, (predicted1.size,))
 plt.figure(1)
 plt.subplot(211)
 plt.plot(predicted)
-# plt.plot(y_test)
+plt.plot(y_test)
 plt.subplot(212)
 plt.plot(predicted1)
 plt.plot(y_test)
