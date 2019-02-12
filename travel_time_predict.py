@@ -98,7 +98,7 @@ for sample_target in samples_targets:
             y_train = np.array(targets)
             BATCH_SIZE = 32
             epoch = 2
-            model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.05)
+            model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.01)
             samples = []
             targets = []
 
