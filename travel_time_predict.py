@@ -91,7 +91,7 @@ for sample_target in samples_targets:
         (sample, target) = sample_target
         samples.append(sample)
         targets.append(target)
-        if len(samples) >= 10000 or train_count == 1100000:
+        if len(samples) >= 10080 or train_count == 1100000:
             assert len(samples) == len(targets)
             print('training samples at: ', train_count)
             x_train = np.array(samples)
