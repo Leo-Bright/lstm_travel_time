@@ -106,7 +106,7 @@ for sample_target in samples_targets:
         test_targets.append(target)
         if len(test_samples) >= 10080:
             x_test = np.array(test_samples)
-            y_test = np.array(test_samples)
+            y_test = np.array(test_targets)
             metri = model.evaluate(x_test, y_test)
             print('test result:', metri)
             test_result.append(metri)
@@ -114,7 +114,7 @@ for sample_target in samples_targets:
             test_targets = []
 
 print(emb)
-print('mean test loss:', sum(test_result/len(test_result)))
+print('mean test loss:', sum(test_result)/len(test_result))
 
 
 # start with first frame
