@@ -82,8 +82,10 @@ targets = []
 test_samples = []
 test_targets = []
 test_result = []
+have_test_result = False
 
 train_count = 0
+
 for sample_target in samples_targets:
     train_count += 1
     if train_count <= 1100000:
@@ -104,17 +106,24 @@ for sample_target in samples_targets:
     else:
         test_samples.append(sample)
         test_targets.append(target)
-        if len(test_samples) >= 10080:
-            x_test = np.array(test_samples)
-            y_test = np.array(test_targets)
-            metri = model.evaluate(x_test, y_test)
-            print('test result:', metri)
-            test_result.append(metri)
-            test_samples = []
-            test_targets = []
+    if len(test_samples) >= 10080:
+        have_test_result = True
+        x_test = np.array(test_samples)
+        y_test = np.array(test_targets)
+        metri = model.evaluate(x_test, y_test)
+        print('test result:', metri)
+        test_result.append(metri)
+        test_samples = []
+        test_targets = []
 
 print(emb)
-print('mean test loss:', sum(test_result)/len(test_result))
+if not have_test_result and len(test_samples) > 0:
+    x_test = np.array(test_samples)
+    y_test = np.array(test_targets)
+    metri = model.evaluate(x_test, y_test)
+    print('Finally result:', metri)
+else:
+    print('mean test loss:', sum(test_result)/len(test_result))
 
 
 # start with first frame
