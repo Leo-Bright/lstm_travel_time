@@ -56,8 +56,8 @@ def build_model():
     # Neural Network model
     model = Sequential()
     # model.add(Masking(mask_value=0, input_shape=(1000, 128)))
-    model.add(LSTM(50, input_shape=(1000, 128), return_sequences=False))
-    # model.add(LSTM(100, return_sequences=False))
+    model.add(LSTM(100, input_shape=(1000, 128), return_sequences=True))
+    model.add(LSTM(100, return_sequences=False))
     model.add(Dense(1))
     model.add(Activation('relu'))
     model.compile(loss="mae", optimizer="adam")
