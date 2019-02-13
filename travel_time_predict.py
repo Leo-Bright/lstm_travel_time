@@ -27,8 +27,6 @@ def extract_samples(samples_file, osmid_embeddings):
         line_count = 0
         for line in sam_file:
             line_count += 1
-            if line_count % 2000 == 0:
-                print('line_count:', line_count)
             line = line.strip()
             nodes_time = line.split(' ')
             length = len(nodes_time)
@@ -83,6 +81,7 @@ samples = []
 targets = []
 test_samples = []
 test_targets = []
+test_result = []
 
 train_count = 0
 for sample_target in samples_targets:
@@ -105,11 +104,17 @@ for sample_target in samples_targets:
     else:
         test_samples.append(sample)
         test_targets.append(target)
-        x_test = np.array(test_samples)
-        y_test = np.array(test_samples)
+        if len(test_samples) >= 10080:
+            x_test = np.array(test_samples)
+            y_test = np.array(test_samples)
+            metri = model.evaluate(x_test, y_test)
+            print('test result:', metri)
+            test_result.append(metri)
+            test_samples = []
+            test_targets = []
 
-metri = model.evaluate(x_test, y_test)
-print(metri)
+print(emb)
+print('mean test loss:', sum(test_result/len(test_result)))
 
 
 # start with first frame
