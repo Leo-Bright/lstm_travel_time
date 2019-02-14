@@ -75,6 +75,7 @@ with open(samples_file, 'r') as sam_file:
         if 10 > length or length > 1000:
             continue
         samples_in_file.append(nodes_time)
+    print('extract samples from file done: ', samples_file)
 
 node_embeddings = extract_embeddings(emb)
 
