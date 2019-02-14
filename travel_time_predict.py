@@ -8,6 +8,11 @@ from keras.layers import Masking
 import os
 
 
+emb = 'po_random_1280_128d.emb'
+
+samples_file = 'pt_trajectory_node_travel_time.travel'
+
+
 def extract_embeddings(embeddings_file):
     osmid2embeddings = {}
     with open(embeddings_file, 'r') as emb_file:
@@ -21,59 +26,59 @@ def extract_embeddings(embeddings_file):
     return osmid2embeddings
 
 
-def extract_samples(samples_file, osmid_embeddings):
+def extract_samples(all_nodes_time, osmid_embeddings):
     zero_list = [0 for i in range(128)]
-    with open(samples_file, 'r') as sam_file:
-        line_count = 0
-        for line in sam_file:
-            line_count += 1
-            line = line.strip()
-            nodes_time = line.split(' ')
-            length = len(nodes_time)
-            if 10 > length or length > 1000:
-                continue
-            sample = []
-            bag_line = False
-            for node in nodes_time[:-1]:
-                if node not in osmid_embeddings:
-                    bag_line = True
-                    break
-                node_embeddings = osmid_embeddings[node]
-                tmp_emb = [float(ele) for ele in node_embeddings]
-                sample.append(tmp_emb)
-            target = nodes_time[-1]
-            while len(sample) < 1000:
-                tmp_zero = zero_list.copy()
-                sample.append(tmp_zero)
-            if bag_line:
-                continue
-            else:
-                yield (sample, target)
+    sample = []
+    bag_line = False
+    for item in all_nodes_time:
+        for node in item[:-1]:
+            if node not in osmid_embeddings:
+                bag_line = True
+                break
+            id_embeddings = osmid_embeddings[node]
+            tmp_emb = [float(ele) for ele in id_embeddings]
+            sample.append(tmp_emb)
+        target = item[-1]
+        while len(sample) < 1000:
+            tmp_zero = zero_list.copy()
+            sample.append(tmp_zero)
+        if bag_line:
+            continue
+        else:
+            yield (sample, target)
 
 
 def build_model():
     # LSTM层的输入必须是三维的
     # Neural Network model
-    model = Sequential()
+    _model = Sequential()
     # model.add(Masking(mask_value=0, input_shape=(1000, 128)))
-    model.add(LSTM(100, input_shape=(1000, 128), return_sequences=True))
-    model.add(LSTM(100, return_sequences=False))
-    model.add(Dense(1))
-    model.add(Activation('relu'))
-    model.compile(loss="mae", optimizer="adam")
-    model.summary()
-    return model
+    _model.add(LSTM(100, input_shape=(1000, 128), return_sequences=True))
+    _model.add(LSTM(100, return_sequences=False))
+    _model.add(Dense(1))
+    _model.add(Activation('relu'))
+    _model.compile(loss="mae", optimizer="adam")
+    _model.summary()
+    return _model
 
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-emb = 'po_random_1280_128d.emb'
+samples_in_file = []
+with open(samples_file, 'r') as sam_file:
+    line_count = 0
+    for line in sam_file:
+        line_count += 1
+        line = line.strip()
+        nodes_time = line.split(' ')
+        length = len(nodes_time)
+        if 10 > length or length > 1000:
+            continue
+        samples_in_file.append(nodes_time)
 
-samples_file = 'pt_trajectory_node_travel_time.travel'
+node_embeddings = extract_embeddings(emb)
 
-osmid_embeddings = extract_embeddings(emb)
-
-samples_targets = extract_samples(samples_file, osmid_embeddings)
+samples_targets = extract_samples(samples_in_file, node_embeddings)
 
 model = build_model()
 
@@ -84,15 +89,17 @@ test_targets = []
 test_result = []
 have_test_result = False
 
+samples_count = len(samples_in_file)
+
 train_count = 0
 
 for sample_target in samples_targets:
+    (_sample, _target) = sample_target
     train_count += 1
-    if train_count <= 1100000:
-        (sample, target) = sample_target
-        samples.append(sample)
-        targets.append(target)
-        if len(samples) >= 10080 or train_count == 1100000:
+    if train_count <= samples_count * 0.9:
+        samples.append(_sample)
+        targets.append(_target)
+        if len(samples) >= 10080 or train_count >= samples_count * 0.9:
             assert len(samples) == len(targets)
             print('training samples at: ', train_count)
             x_train = np.array(samples)
@@ -104,8 +111,8 @@ for sample_target in samples_targets:
             targets = []
 
     else:
-        test_samples.append(sample)
-        test_targets.append(target)
+        test_samples.append(_sample)
+        test_targets.append(_target)
     if len(test_samples) >= 10080:
         have_test_result = True
         x_test = np.array(test_samples)
