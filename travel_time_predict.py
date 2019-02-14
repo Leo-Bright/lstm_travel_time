@@ -28,9 +28,9 @@ def extract_embeddings(embeddings_file):
 
 def extract_samples(all_nodes_time, osmid_embeddings):
     zero_list = [0 for i in range(128)]
-    sample = []
     bag_line = False
     for item in all_nodes_time:
+        sample = []
         for node in item[:-1]:
             if node not in osmid_embeddings:
                 bag_line = True
