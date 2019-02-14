@@ -8,9 +8,9 @@ from keras.layers import Masking
 import os
 
 
-emb = 'po_random_1280_128d.emb'
+emb = 'porto/my_model/po_random_1280_128d.emb'
 
-samples_file = 'pt_trajectory_node_travel_time.travel'
+samples_file = 'porto/samples/pt_trajectory_node_travel_time.travel'
 
 
 def extract_embeddings(embeddings_file):
@@ -53,8 +53,8 @@ def build_model():
     # Neural Network model
     _model = Sequential()
     # model.add(Masking(mask_value=0, input_shape=(1000, 128)))
-    _model.add(LSTM(100, input_shape=(1000, 128), return_sequences=True))
-    _model.add(LSTM(100, return_sequences=False))
+    _model.add(LSTM(56, input_shape=(1000, 128), return_sequences=True))
+    _model.add(LSTM(56, return_sequences=False))
     _model.add(Dense(1))
     _model.add(Activation('relu'))
     _model.compile(loss="mae", optimizer="adam")
