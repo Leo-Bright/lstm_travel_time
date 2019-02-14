@@ -8,9 +8,9 @@ from keras.layers import Masking
 import os
 
 
-emb = 'porto/my_model/po_random_1280_128d.emb'
+emb = 'tokyo/line/tk_LINE1_128'
 
-samples_file = 'porto/samples/pt_trajectory_node_travel_time.travel'
+samples_file = 'tokyo/samples/tk_trajectory_transport_all_node_travel_time_450.travel'
 
 
 def extract_embeddings(embeddings_file):
@@ -28,8 +28,8 @@ def extract_embeddings(embeddings_file):
 
 def extract_samples(all_nodes_time, osmid_embeddings):
     zero_list = [0 for i in range(128)]
-    bag_line = False
     for item in all_nodes_time:
+        bag_line = False
         sample = []
         for node in item[:-1]:
             if node not in osmid_embeddings:
@@ -91,16 +91,17 @@ test_result = []
 have_test_result = False
 
 samples_count = len(samples_in_file)
-
+train_num = round(samples_count * 0.9)
 train_count = 0
+iteration_batch = 10080
 
 for sample_target in samples_targets:
     (_sample, _target) = sample_target
     train_count += 1
-    if train_count <= samples_count * 0.9:
+    if train_count <= train_num:
         samples.append(_sample)
         targets.append(_target)
-        if len(samples) >= 10080 or train_count >= samples_count * 0.9:
+        if len(samples) >= iteration_batch or train_count == train_num:
             assert len(samples) == len(targets)
             print('training samples at: ', train_count)
             x_train = np.array(samples)
@@ -110,11 +111,10 @@ for sample_target in samples_targets:
             model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.01)
             samples = []
             targets = []
-
     else:
         test_samples.append(_sample)
         test_targets.append(_target)
-    if len(test_samples) >= 10080:
+    if len(test_samples) >= iteration_batch:
         have_test_result = True
         x_test = np.array(test_samples)
         y_test = np.array(test_targets)
