@@ -7,118 +7,155 @@ from keras.layers.recurrent import LSTM
 from keras.layers import Masking
 import os
 
-emb = 'po_random_1280_128d.emb'
 
-samples_file = 'pt_trajectory_node_travel_time.travel'
+emb = 'tokyo/line/tk_LINE1_128'
 
-osmid_embeddings = {}
+samples_file = 'tokyo/samples/tk_trajectory_transport_all_node_travel_time_450.travel'
 
-with open(emb, 'r') as emb_file:
-    for line in emb_file:
-        line = line.strip()
-        osmid_vector = line.split(' ')
-        osmid, node_vec = osmid_vector[0], osmid_vector[1:]
-        if len(node_vec) < 10:
-            continue
-        osmid_embeddings[osmid] = node_vec
 
-samples = []
-targets = []
-print('=============22222222===========')
-with open(samples_file, 'r') as sam_file:
-    for line in sam_file:
-        line = line.strip()
-        nodes_time = line.split(' ')
-        length = len(nodes_time)
-        if 10 > length > 1000:
-            continue
-        sample = []
+def extract_embeddings(embeddings_file):
+    osmid2embeddings = {}
+    with open(embeddings_file, 'r') as emb_file:
+        for line in emb_file:
+            line = line.strip()
+            osmid_vector = line.split(' ')
+            osmid, node_vec = osmid_vector[0], osmid_vector[1:]
+            if len(node_vec) < 10:
+                continue
+            osmid2embeddings[osmid] = node_vec
+    return osmid2embeddings
+
+
+def extract_samples(all_nodes_time, osmid_embeddings):
+    zero_list = [0 for i in range(128)]
+    for item in all_nodes_time:
         bag_line = False
-        for node in nodes_time[:-1]:
+        sample = []
+        for node in item[:-1]:
             if node not in osmid_embeddings:
                 bag_line = True
                 break
-            node_embeddings = osmid_embeddings[node]
-            sample.append(node_embeddings)
-
+            id_embeddings = osmid_embeddings[node]
+            tmp_emb = [float(ele) for ele in id_embeddings]
+            sample.append(tmp_emb)
+        target = item[-1]
+        while len(sample) < 1000:
+            tmp_zero = zero_list.copy()
+            sample.append(tmp_zero)
         if bag_line:
             continue
         else:
-            targets.append(nodes_time[-1])
-            samples.append(sample)
+            yield (sample, target)
 
-print('=============111111===========')
+
+def build_model():
+    # LSTM层的输入必须是三维的
+    # Neural Network model
+    _model = Sequential()
+    # model.add(Masking(mask_value=0, input_shape=(1000, 128)))
+    _model.add(LSTM(56, input_shape=(1000, 128), return_sequences=True))
+    _model.add(LSTM(56, return_sequences=False))
+    _model.add(Dense(1))
+    _model.add(Activation('relu'))
+    _model.compile(loss="mae", optimizer="adam")
+    _model.summary()
+    return _model
+
+
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-# step = 0.15
-# steps = 750
-# x = np.arange(0, steps, step)
-# data = np.sin(x)
-# print(data)
-# SEQ_LENGTH = 100
-# sequence_length = SEQ_LENGTH + 1
-# result = []
+samples_in_file = []
+with open(samples_file, 'r') as sam_file:
+    line_count = 0
+    for line in sam_file:
+        line_count += 1
+        line = line.strip()
+        nodes_time = line.split(' ')
+        length = len(nodes_time)
+        if 10 > length or length > 1000:
+            continue
+        samples_in_file.append(nodes_time)
+    print('extract samples from file done: ', samples_file)
 
-# for index in range(len(data) - sequence_length):
-#     result.append(data[index: index + sequence_length])
+node_embeddings = extract_embeddings(emb)
 
-# samples: 1-dimension is sample, 2-dimension is node, 3-dimension is embedding
-samples = np.array(samples)
-targets = np.array(targets)
+samples_targets = extract_samples(samples_in_file, node_embeddings)
 
-row = round(0.9 * samples.shape[0])
+model = build_model()
 
-assert len(samples) == len(targets)
+samples = []
+targets = []
+test_samples = []
+test_targets = []
+test_result = []
+have_test_result = False
 
-x_train = samples[:int(row), :, :]
-y_train = targets[:int(row)]
+samples_count = len(samples_in_file)
+train_num = round(samples_count * 0.9)
+train_count = 0
+iteration_batch = 10080
 
-x_test = samples[int(row):, :, :]
-y_test = targets[int(row)]
+for sample_target in samples_targets:
+    (_sample, _target) = sample_target
+    train_count += 1
+    if train_count <= train_num:
+        samples.append(_sample)
+        targets.append(_target)
+        if len(samples) >= iteration_batch or train_count == train_num:
+            assert len(samples) == len(targets)
+            print('training samples at: ', train_count)
+            x_train = np.array(samples)
+            y_train = np.array(targets)
+            BATCH_SIZE = 32
+            epoch = 2
+            model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.01)
+            samples = []
+            targets = []
+    else:
+        test_samples.append(_sample)
+        test_targets.append(_target)
+    if len(test_samples) >= iteration_batch:
+        have_test_result = True
+        x_test = np.array(test_samples)
+        y_test = np.array(test_targets)
+        metri = model.evaluate(x_test, y_test)
+        print('test result:', metri)
+        test_result.append(metri)
+        test_samples = []
+        test_targets = []
 
-# LSTM层的输入必须是三维的
-# x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-# x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
-# print(x_train)
+print(emb)
+if not have_test_result and len(test_samples) > 0:
+    x_test = np.array(test_samples)
+    y_test = np.array(test_targets)
+    metri = model.evaluate(x_test, y_test)
+    print('Finally result:', metri)
+else:
+    print('mean test loss:', sum(test_result)/len(test_result))
 
-# Neural Network model
-HIDDEN_DIM = 512
-LAYER_NUM = 10
-model = Sequential()
-model.add(Masking(mask_value=0, input_shape=(1000, 128)))
-model.add(LSTM(50, input_shape=(1000, 128), return_sequences=True))
-model.add(LSTM(100, return_sequences=False))
-model.add(Dense(1))
-model.add(Activation('linear'))
-model.compile(loss="mse", optimizer="rmsprop")
-model.summary()
-BATCH_SIZE = 32
-epoch = 1
-model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.05)
 
 # start with first frame
-curr_frame = x_test[0]
+# curr_frame = x_test[0]
 
 # start with zeros
 # curr_frame = np.zeros((100,1))
 
-predicted = []
+# predicted = []
 
 # for i in range(len(x_test)):
 #     predicted.append(model.predict(curr_frame[newaxis, :, :])[0, 0])
 #     curr_frame = curr_frame[1:]
 #     curr_frame = np.insert(curr_frame, [SEQ_LENGTH - 1], predicted[-1], axis=0)
 
-predicted1 = model.predict(x_test)
-metri = model.evaluate(x_test, y_test)
-print(metri)
-predicted1 = np.reshape(predicted1, (predicted1.size,))
+# predicted1 = model.predict(x_test)
 
-plt.figure(1)
-plt.subplot(211)
-plt.plot(predicted)
+# predicted1 = np.reshape(predicted1, (predicted1.size,))
+
+# plt.figure(1)
+# plt.subplot(211)
+# plt.plot(predicted)
 # plt.plot(y_test)
-plt.subplot(212)
-plt.plot(predicted1)
-plt.plot(y_test)
-plt.show()
+# plt.subplot(212)
+# plt.plot(predicted1)
+# plt.plot(y_test)
+# plt.show()
