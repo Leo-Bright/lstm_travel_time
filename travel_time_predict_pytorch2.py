@@ -1,16 +1,35 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import newaxis
-from keras.models import Sequential
-from keras.layers.core import Dense, Activation
-from keras.layers.recurrent import LSTM
-from keras.layers import Masking
+import torch
+from torch import nn
+from torch.autograd import Variable
 import os
 
 
 emb = 'po_random_1280_128d.emb'
 
 samples_file = 'pt_trajectory_node_travel_time.travel'
+
+
+# 定义模型
+class LstmRegression(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size=1, num_layers=2):
+        super(LstmRegression, self).__init__()
+
+        self.rnn = nn.LSTM(input_size, hidden_size, num_layers)  # rnn
+        self.reg = nn.Linear(hidden_size, output_size)  # 回归
+
+    def forward(self, x):
+        x, _ = self.rnn(x)  # (seq, batch, hidden)
+        s, b, h = x.shape
+        x = x.view(s * b, h)  # 转换成线性层的输入格式
+        x = self.reg(x)
+        x = x.view(s, b, -1)
+        return x
+
+    def train(self, x, y):
+        pass
+
 
 
 def extract_embeddings(embeddings_file):
@@ -48,20 +67,6 @@ def extract_samples(all_nodes_time, osmid_embeddings):
             yield (sample, target)
 
 
-def build_model():
-    # LSTM层的输入必须是三维的
-    # Neural Network model
-    _model = Sequential()
-    # model.add(Masking(mask_value=0, input_shape=(1000, 128)))
-    _model.add(LSTM(56, input_shape=(1000, 128), return_sequences=True))
-    _model.add(LSTM(56, return_sequences=False))
-    _model.add(Dense(1))
-    _model.add(Activation('relu'))
-    _model.compile(loss="mae", optimizer="adam")
-    _model.summary()
-    return _model
-
-
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 samples_in_file = []
@@ -81,7 +86,11 @@ node_embeddings = extract_embeddings(emb)
 
 samples_targets = extract_samples(samples_in_file, node_embeddings)
 
-model = build_model()
+# model = build_model()
+model = LstmRegression(128, 100)
+# criterion = nn.MAELoss()
+criterion = nn.L1Loss()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
 samples = []
 targets = []
@@ -93,36 +102,35 @@ have_test_result = False
 samples_count = len(samples_in_file)
 train_num = round(samples_count * 0.9)
 train_count = 0
-iteration_batch = 10080
+iteration_batch = 128
 
-for sample_target in samples_targets:
-    (_sample, _target) = sample_target
-    train_count += 1
-    if train_count <= train_num:
-        samples.append(_sample)
-        targets.append(_target)
-        if len(samples) >= iteration_batch or train_count == train_num:
-            assert len(samples) == len(targets)
-            print('training samples at: ', train_count)
-            x_train = np.array(samples)
-            y_train = np.array(targets)
-            BATCH_SIZE = 32
-            epoch = 2
-            model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.01)
-            samples = []
-            targets = []
-    else:
-        test_samples.append(_sample)
-        test_targets.append(_target)
-    if len(test_samples) >= iteration_batch:
-        have_test_result = True
-        x_test = np.array(test_samples)
-        y_test = np.array(test_targets)
-        metri = model.evaluate(x_test, y_test)
-        print('test result:', metri)
-        test_result.append(metri)
-        test_samples = []
-        test_targets = []
+for epoch in range(10):
+    for sample_target in samples_targets:
+        (_sample, _target) = sample_target
+        train_count += 1
+        if train_count <= train_num:
+            samples.append(_sample)
+            targets.append(_target)
+            if len(samples) >= iteration_batch or train_count == train_num:
+                assert len(samples) == len(targets)
+                print('training samples at: ', train_count)
+                x_train = np.array(samples)
+                y_train = np.array(targets)
+                loss = model.train(x_train, y_train)
+                samples = []
+                targets = []
+        else:
+            test_samples.append(_sample)
+            test_targets.append(_target)
+        if len(test_samples) >= iteration_batch:
+            have_test_result = True
+            x_test = np.array(test_samples)
+            y_test = np.array(test_targets)
+            metri = model.evaluate(x_test, y_test)
+            print('test result:', metri)
+            test_result.append(metri)
+            test_samples = []
+            test_targets = []
 
 print(emb)
 if not have_test_result and len(test_samples) > 0:

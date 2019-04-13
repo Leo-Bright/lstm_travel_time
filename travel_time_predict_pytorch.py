@@ -116,7 +116,7 @@ class lstm_reg(nn.Module):
         self.reg = nn.Linear(hidden_size, output_size)  # 回归
 
     def forward(self, x):
-        x, _ = self.rnn(x)  # (seq, batch, hidden)
+        x, _ = self.rnn(x)  # (seq, batch, hidden) (batch, hidden) is the shape of inputs
         s, b, h = x.shape
         x = x.view(s * b, h)  # 转换成线性层的输入格式
         x = self.reg(x)
