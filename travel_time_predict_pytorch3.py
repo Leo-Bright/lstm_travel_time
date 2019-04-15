@@ -62,7 +62,7 @@ class lstm_reg(nn.Module):
 
 
 model = lstm_reg(128, 100)
-criterion = nn.MSELoss()
+criterion = nn.L1Loss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
 
