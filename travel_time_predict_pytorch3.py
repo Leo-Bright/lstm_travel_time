@@ -120,7 +120,7 @@ for epo in range(epoch):
                 optimizer.step()
                 samples = []
                 targets = []
-                if train_count % 100 == 0:  # 每 100 次输出结果
-                    print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data[0]))
+                if train_count % 10 == 0:  # 每 100 次输出结果
+                    print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data.item()))
         else:
             break
