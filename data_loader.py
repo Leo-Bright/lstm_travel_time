@@ -25,13 +25,14 @@ class MySet(Dataset):
         zero_list = [0 for i in range(128)]
         for node in nodes:
             if node not in osmid2emb:
+                print("not in ")
                 continue
             id_embedding = osmid2emb[node]
             _emb = [float(ele) for ele in id_embedding]
             sample["travel"].append(_emb)
-        while len(sample["travel"]) < 1000:
-            tmp_zero = zero_list.copy()
-            sample["travel"].append(tmp_zero)
+        # while len(sample["travel"]) < 1000:
+        #     tmp_zero = zero_list.copy()
+        #     sample["travel"].append(tmp_zero)
         sample["time"] = time
         return sample
 
