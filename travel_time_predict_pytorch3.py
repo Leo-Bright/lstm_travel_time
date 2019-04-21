@@ -44,6 +44,13 @@ def extract_samples(all_nodes_time, osmid_embeddings):
             yield (sample, float(target))
 
 
+def average(losses):
+    loss_total = 0
+    for loss in losses:
+        loss_total += loss
+    return loss_total/len(losses)
+
+
 # 定义模型
 class lstm_reg(nn.Module):
     def __init__(self, input_size, hidden_size, output_size=1, num_layers=2):
@@ -81,8 +88,6 @@ with open(samples_file, 'r') as sam_file:
 
 node_embeddings = extract_embeddings(emb)
 
-samples_targets = extract_samples(samples_in_file, node_embeddings)
-
 samples = []
 targets = []
 test_samples = []
@@ -91,36 +96,69 @@ test_result = []
 have_test_result = False
 
 samples_count = len(samples_in_file)
-train_num = round(samples_count * 1.0)
+train_num = round(samples_count * 0.9)
+test_num = samples_count - train_num
+samples_in_file_train = samples_in_file[:train_num]
+samples_in_file_test = samples_in_file[train_num:]
 
-iteration_batch = 64
-epoch = 5
+iteration_batch = 512
+epoch = 2
 
+# training the model with train data
 for epo in range(epoch):
     print("training at epoch :", epo)
+    samples_targets = extract_samples(samples_in_file_train, node_embeddings)
     train_count = 0
     for sample_target in samples_targets:
         (_sample, _target) = sample_target
-        if train_count <= train_num:
-            samples.append(_sample)
-            targets.append(_target)
-            if len(samples) >= iteration_batch or train_count == train_num:
-                assert len(samples) == len(targets)
-                train_count += 1
-                print('training samples at: ', train_count)
-                x_train = torch.Tensor(samples)
-                y_train = torch.Tensor(targets)
-                var_x = Variable(x_train)
-                var_y = Variable(y_train)
-                out = model(var_x)
-                loss = criterion(out, var_y)
-                # 反向传播
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                samples = []
-                targets = []
-                if train_count % 10 == 0:  # 每 100 次输出结果
-                    print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data.item()))
-        else:
-            break
+        samples.append(_sample)
+        targets.append(_target)
+        if len(samples) >= iteration_batch:
+            assert len(samples) == len(targets)
+            train_count += 1
+            x_train = torch.Tensor(samples)
+            y_train = torch.Tensor(targets)
+            var_x = Variable(x_train)
+            var_y = Variable(y_train)
+            out = model(var_x)
+            loss = criterion(out, var_y)
+            # 反向传播
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            samples = []
+            targets = []
+            if train_count % 10 == 0:  # 每 10 次输出结果
+                print('training samples at: ', train_count * iteration_batch)
+                print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data.item()))
+
+
+# test the model with test data
+samples_targets = extract_samples(samples_in_file_test, node_embeddings)
+test_count = 0
+all_loss_in_batch = []
+for sample_target in samples_targets:
+    (_sample, _target) = sample_target
+    samples.append(_sample)
+    targets.append(_target)
+    if len(samples) >= iteration_batch:
+        assert len(samples) == len(targets)
+        test_count += 1
+        x_test = torch.Tensor(samples)
+        y_test = torch.Tensor(targets)
+        var_x = Variable(x_test)
+        var_y = Variable(y_test)
+        out = model(var_x)
+        loss = criterion(out, var_y)
+        # 反向传播
+        # optimizer.zero_grad()
+        # loss.backward()
+        # optimizer.step()
+        samples = []
+        targets = []
+        all_loss_in_batch.append(loss.data.item())
+
+print("mean loss in test:", average(all_loss_in_batch))
+
+
+
