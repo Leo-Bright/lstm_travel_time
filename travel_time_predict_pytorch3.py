@@ -64,9 +64,9 @@ class lstm_reg(nn.Module):
     def forward(self, x):
         x, _ = self.rnn(x)  # (seq, batch, input_size) (seq, input_size) is the shape of inputs
         b, s, h = x.shape
-        x = x.view(b * s, h)  # 转换成线性层1的输入格式
+        x = x.contiguous().view(b * s, h)  # 转换成线性层1的输入格式
         x = self.reg1(x)
-        x = x.view(-1, 1000)  # 转换成线性层1的输入格式
+        x = x.contiguous().view(-1, 1000)  # 转换成线性层1的输入格式
         # x = x.view(s, b, -1)
         x = self.reg2(x)
         return x
