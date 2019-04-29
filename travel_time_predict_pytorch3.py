@@ -4,9 +4,9 @@ from torch import nn
 from torch.autograd import Variable
 
 
-emb = 'po_random_1280_128d.emb'
+emb = 'sf_random_node2vec_d128_wl1280.embedding'
 
-samples_file = 'pt_trajectory_node_travel_time.travel'
+samples_file = 'sf_trajectory_node_travel_time_450.travel'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
@@ -71,6 +71,7 @@ class lstm_reg(nn.Module):
 
 
 model = lstm_reg(128, 100)
+model.to(device)
 criterion = nn.L1Loss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
