@@ -129,7 +129,7 @@ for epo in range(epoch):
             var_y = var_y.to(device)
             out = model(var_x)
             print("output in training samples at:", train_count * iteration_batch)
-            print(out)
+            print(out.data.item())
             loss = criterion(out, var_y)
             # 反向传播
             optimizer.zero_grad()
