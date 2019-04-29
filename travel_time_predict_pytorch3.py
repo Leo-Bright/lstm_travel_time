@@ -4,9 +4,9 @@ from torch import nn
 from torch.autograd import Variable
 
 
-emb = 'sf_random_node2vec_d128_wl1280.embedding'
+emb = 'po_random_1280_128d.emb'
 
-samples_file = 'sf_trajectory_node_travel_time_450.travel'
+samples_file = 'pt_trajectory_node_travel_time.travel'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
@@ -57,16 +57,18 @@ def average(losses):
 class lstm_reg(nn.Module):
     def __init__(self, input_size, hidden_size, output_size=1, num_layers=2):
         super(lstm_reg, self).__init__()
-
-        self.rnn = nn.LSTM(input_size, hidden_size, num_layers)  # rnn
-        self.reg = nn.Linear(hidden_size, output_size)  # 回归
+        self.rnn = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)  # rnn
+        self.reg1 = nn.Linear(hidden_size, 1)  # 回归1
+        self.reg2 = nn.Linear(1000, output_size)  # 回归1
 
     def forward(self, x):
-        x, _ = self.rnn(x)  # (seq, batch, hidden) (batch, hidden) is the shape of inputs
-        s, b, h = x.shape
-        x = x.view(s * b, h)  # 转换成线性层的输入格式
-        x = self.reg(x)
-        x = x.view(s, b, -1)
+        x, _ = self.rnn(x)  # (seq, batch, input_size) (seq, input_size) is the shape of inputs
+        b, s, h = x.shape
+        x = x.view(b * s, h)  # 转换成线性层1的输入格式
+        x = self.reg1(x)
+        x = x.view(-1, 1000)  # 转换成线性层1的输入格式
+        # x = x.view(s, b, -1)
+        x = self.reg2(x)
         return x
 
 
@@ -126,6 +128,8 @@ for epo in range(epoch):
             var_x = var_x.to(device)
             var_y = var_y.to(device)
             out = model(var_x)
+            print("output in training samples at:", train_count * iteration_batch)
+            print(out)
             loss = criterion(out, var_y)
             # 反向传播
             optimizer.zero_grad()
