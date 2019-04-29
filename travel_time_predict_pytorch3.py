@@ -8,6 +8,8 @@ emb = 'po_random_1280_128d.emb'
 
 samples_file = 'pt_trajectory_node_travel_time.travel'
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print("device:", device)
 
 def extract_embeddings(embeddings_file):
     osmid2embeddings = {}
@@ -120,6 +122,8 @@ for epo in range(epoch):
             y_train = torch.Tensor(targets)
             var_x = Variable(x_train)
             var_y = Variable(y_train)
+            var_x = var_x.to(device)
+            var_y = var_y.to(device)
             out = model(var_x)
             loss = criterion(out, var_y)
             # 反向传播
@@ -148,6 +152,8 @@ for sample_target in samples_targets:
         y_test = torch.Tensor(targets)
         var_x = Variable(x_test)
         var_y = Variable(y_test)
+        var_x = var_x.to(device)
+        var_y = var_y.to(device)
         out = model(var_x)
         loss = criterion(out, var_y)
         # 反向传播
@@ -159,6 +165,3 @@ for sample_target in samples_targets:
         all_loss_in_batch.append(loss.data.item())
 
 print("mean loss in test:", average(all_loss_in_batch))
-
-
-
