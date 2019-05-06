@@ -129,10 +129,7 @@ for epo in range(epoch):
             var_y = var_y.to(device)
             out = model(var_x)
             del var_x
-            print("output in training samples at:", (train_count - 1) * iteration_batch)
-            print(out.view(1, -1).data.numpy()[0].tolist())
             loss = criterion(out, var_y)
-            del var_y, out
             # 反向传播
             optimizer.zero_grad()
             loss.backward()
@@ -141,8 +138,9 @@ for epo in range(epoch):
             targets = []
             if train_count % 10 == 0:  # 每 10 次输出结果
                 print('trained samples : ', train_count * iteration_batch)
+                print(out.view(1, -1).data.numpy()[0].tolist())
                 print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data.item()))
-
+            del var_y, out
 
 # test the model with test data
 samples_targets = extract_samples(samples_in_file_test, node_embeddings)
