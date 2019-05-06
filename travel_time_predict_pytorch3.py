@@ -4,9 +4,9 @@ from torch import nn
 from torch.autograd import Variable
 
 
-emb = 'sf_random_node2vec_d128_wl1280.embedding'
+emb = 'po_random_1280_128d.emb'
 
-samples_file = 'sf_trajectory_node_travel_time_450.travel'
+samples_file = 'pt_trajectory_node_travel_time.travel'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
@@ -129,8 +129,8 @@ for epo in range(epoch):
             var_y = var_y.to(device)
             out = model(var_x)
             del var_x
-            print("output in training samples at:", train_count * iteration_batch)
-            print(out)
+            print("output in training samples at:", (train_count - 1) * iteration_batch)
+            print(out.view(1, -1).data.numpy()[0])
             loss = criterion(out, var_y)
             del var_y, out
             # 反向传播
@@ -140,7 +140,7 @@ for epo in range(epoch):
             samples = []
             targets = []
             if train_count % 10 == 0:  # 每 10 次输出结果
-                print('training samples at: ', train_count * iteration_batch)
+                print('trained samples : ', train_count * iteration_batch)
                 print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data.item()))
 
 
