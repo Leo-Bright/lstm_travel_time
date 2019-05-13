@@ -11,6 +11,7 @@ samples_file = 'pt_trajectory_node_travel_time.travel'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
 
+
 def extract_embeddings(embeddings_file):
     osmid2embeddings = {}
     with open(embeddings_file, 'r') as emb_file:
@@ -24,9 +25,12 @@ def extract_embeddings(embeddings_file):
     return osmid2embeddings
 
 
-def extract_samples(all_nodes_time, osmid_embeddings):
+def extract_samples(travel_samples_file, osmid_embeddings):
     zero_list = [0 for i in range(128)]
-    for item in all_nodes_time:
+    for item in travel_samples_file:
+        target = float(item[-1])
+        if target < 100:
+            continue
         bag_line = False
         sample = []
         for node in item[:-1]:
@@ -36,14 +40,14 @@ def extract_samples(all_nodes_time, osmid_embeddings):
             id_embeddings = osmid_embeddings[node]
             tmp_emb = [float(ele) for ele in id_embeddings]
             sample.append(tmp_emb)
-        target = item[-1]
+
         while len(sample) < 1000:
             tmp_zero = zero_list.copy()
             sample.append(tmp_zero)
         if bag_line:
             continue
         else:
-            yield (sample, float(target))
+            yield (sample, target)
 
 
 def average(losses):
@@ -75,7 +79,7 @@ class lstm_reg(nn.Module):
 model = lstm_reg(128, 100)
 model.to(device)
 criterion = nn.L1Loss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 
 samples_in_file = []
@@ -106,8 +110,8 @@ test_num = samples_count - train_num
 samples_in_file_train = samples_in_file[:train_num]
 samples_in_file_test = samples_in_file[train_num:]
 
-iteration_batch = 512
-epoch = 2
+iteration_batch = 50
+epoch = 200
 
 # training the model with train data
 for epo in range(epoch):
@@ -137,8 +141,13 @@ for epo in range(epoch):
             samples = []
             targets = []
             if train_count % 10 == 0:  # 每 10 次输出结果
-                print('trained samples : ', train_count * iteration_batch)
-                print(out.view(1, -1).data.numpy()[0].tolist())
+                print("==================================this is split line==================================")
+                print('trained samples at: ', train_count * iteration_batch)
+                print("==================================this is split line==================================")
+                print("predicted values: ", out.view(1, -1).data.numpy()[0].tolist())
+                print("==================================this is split line==================================")
+                print("the true values: ", targets)
+                print("==================================this is split line==================================")
                 print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data.item()))
             del var_y, out
 
