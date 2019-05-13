@@ -29,7 +29,7 @@ def extract_samples(travel_samples_file, osmid_embeddings):
     zero_list = [0 for i in range(128)]
     for item in travel_samples_file:
         target = float(item[-1])
-        if target < 100:
+        if target < 100 or target > 1100:
             continue
         bag_line = False
         sample = []
@@ -138,8 +138,6 @@ for epo in range(epoch):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            samples = []
-            targets = []
             if train_count % 10 == 0:  # 每 10 次输出结果
                 print("==================================this is split line==================================")
                 print('trained samples at: ', train_count * iteration_batch)
@@ -149,6 +147,8 @@ for epo in range(epoch):
                 print("the true values: ", targets)
                 print("==================================this is split line==================================")
                 print('Epoch: {}, Loss: {:.5f}'.format(epo + 1, loss.data.item()))
+            samples = []
+            targets = []
             del var_y, out
 
 # test the model with test data
