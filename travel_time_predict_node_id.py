@@ -14,9 +14,9 @@ def extract_samples(travel_samples_file):
         target = float(item[-1])
         if target < 100 or target > 1100:
             continue
-        sample = [int(ele) for ele in item[:-1]]
+        sample = [[int(ele)] for ele in item[:-1]]
         while len(sample) < 1000:
-            sample.append(0)
+            sample.append([0,])
         yield (sample, target)
 
 
