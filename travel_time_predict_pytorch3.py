@@ -79,7 +79,7 @@ class lstm_reg(nn.Module):
 model = lstm_reg(128, 100)
 model.to(device)
 criterion = nn.L1Loss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
 
 samples_in_file = []
@@ -90,7 +90,7 @@ with open(samples_file, 'r') as sam_file:
         line = line.strip()
         nodes_time = line.split(' ')
         length = len(nodes_time)
-        if 10 > length or length > 1000:
+        if 10 > length or length > 200:
             continue
         samples_in_file.append(nodes_time)
     print('extract samples from file done: ', samples_file)
@@ -111,7 +111,7 @@ samples_in_file_train = samples_in_file[:train_num]
 samples_in_file_test = samples_in_file[train_num:]
 
 iteration_batch = 50
-epoch = 200
+epoch = 100
 
 # training the model with train data
 for epo in range(epoch):
