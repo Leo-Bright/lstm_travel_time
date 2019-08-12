@@ -49,7 +49,7 @@ def extract_samples(all_nodes_time, osmid_embeddings, max_length):
 def build_model():
     # LSTM层的输入必须是三维的
     _model = tf.keras.models.Sequential()
-    _model.add(tf.keras.layers.LSTM(56, input_shape=(1000, 128)))
+    _model.add(tf.keras.layers.LSTM(56, input_shape=(max_sample_length, 128)))
     _model.add(tf.keras.layers.Dense(1))
     _model.compile(loss="mae", optimizer="adam")
     return _model
@@ -89,7 +89,7 @@ have_test_result = False
 samples_count = len(samples_in_file)
 train_num = round(samples_count * 0.9)
 train_count = 0
-iteration_batch = 512
+iteration_batch = 10080
 
 for sample_target in samples_targets:
     (_sample, _target) = sample_target
@@ -102,8 +102,8 @@ for sample_target in samples_targets:
             print('training samples at: ', train_count)
             x_train = np.array(samples)
             y_train = np.array(targets)
-            BATCH_SIZE = 32
-            epoch = 2
+            BATCH_SIZE = 64
+            epoch = 200
             model.fit(x_train, y_train, batch_size=BATCH_SIZE, verbose=1, epochs=epoch, validation_split=0.01)
             samples = []
             targets = []
