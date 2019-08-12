@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow_datasets as tfds
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 
 
@@ -23,7 +24,7 @@ def extract_embeddings(embeddings_file):
     return osmid2embeddings
 
 
-def extract_samples(all_nodes_time, osmid_embeddings):
+def extract_samples(all_nodes_time, osmid_embeddings, max_length):
     zero_list = [0 for i in range(128)]
     for item in all_nodes_time:
         bag_line = False
@@ -36,7 +37,7 @@ def extract_samples(all_nodes_time, osmid_embeddings):
             tmp_emb = [float(ele) for ele in id_embeddings]
             sample.append(tmp_emb)
         target = item[-1]
-        while len(sample) < 1000:
+        while len(sample) < max_length:
             tmp_zero = zero_list.copy()
             sample.append(tmp_zero)
         if bag_line:
@@ -57,6 +58,7 @@ def build_model():
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 samples_in_file = []
+max_sample_length = 0
 with open(samples_file, 'r') as sam_file:
     line_count = 0
     for line in sam_file:
@@ -66,12 +68,14 @@ with open(samples_file, 'r') as sam_file:
         length = len(nodes_time)
         if 10 > length or length > 1000:
             continue
+        if length > max_sample_length:
+            max_sample_length = length
         samples_in_file.append(nodes_time)
     print('extract samples from file done: ', samples_file)
 
 node_embeddings = extract_embeddings(emb)
 
-samples_targets = extract_samples(samples_in_file, node_embeddings)
+samples_targets = extract_samples(samples_in_file, node_embeddings, max_sample_length)
 
 model = build_model()
 
