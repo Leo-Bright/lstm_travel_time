@@ -42,11 +42,13 @@ def extract_samples(travel_samples_file, node_embed, edge_embed):
                     bad_line = True
                     break
                 id_embeddings = node_embed[ele]
+                flag = False
             else:
                 if ele not in edge_embed:
                     bad_line = True
                     break
                 id_embeddings = edge_embed[ele]
+                flag = True
             tmp_emb = [float(ele) for ele in id_embeddings]
             sample.append(tmp_emb)
 
