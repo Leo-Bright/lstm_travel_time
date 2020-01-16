@@ -4,11 +4,11 @@ from torch import nn
 from torch.autograd import Variable
 
 
-emb_node = 'po_random_1280_128d.emb'
+emb_node = '../ISRN2Vec/sanfrancisco/sf_shortest_isrn2vec_nw0.4_sw0.4_distance500_dim128_node.embedding'
 
-emb_edge = 'po_random_1280_128d.emb'
+emb_edge = '../ISRN2Vec/sanfrancisco/sf_shortest_isrn2vec_nw0.4_sw0.4_distance500_dim128_segment.embedding'
 
-samples_file = 'pt_trajectory_node_travel_time.travel'
+samples_file = 'sanfranciso/samples/sf_trajectory_mixture_travel_time_450_1w.travel'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
@@ -123,7 +123,7 @@ samples_in_file_train = samples_in_file[:train_num]
 samples_in_file_test = samples_in_file[train_num:]
 
 iteration_batch = 50
-epoch = 100
+epoch = 50
 
 # training the model with train data
 for epo in range(epoch):
@@ -164,7 +164,7 @@ for epo in range(epoch):
             del var_y, out
 
 # test the model with test data
-samples_targets = extract_samples(samples_in_file_test, node_embeddings)
+samples_targets = extract_samples(samples_in_file_test, node_embeddings, edge_embeddings)
 test_count = 0
 all_loss_in_batch = []
 for sample_target in samples_targets:
