@@ -4,9 +4,11 @@ from torch import nn
 from torch.autograd import Variable
 
 
-emb = 'po_random_1280_128d.emb'
+emb = 'sanfranciso/raw_feature/sanfrancisco_raw_feature_traffic.embeddings'
 
-samples_file = 'pt_trajectory_node_travel_time.travel'
+samples_file = 'sanfranciso/samples/sf_trajectory_node_travel_time_450_1w.travel'
+
+input_dim = 17
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
@@ -19,14 +21,14 @@ def extract_embeddings(embeddings_file):
             line = line.strip()
             osmid_vector = line.split(' ')
             osmid, node_vec = osmid_vector[0], osmid_vector[1:]
-            if len(node_vec) < 10:
+            if len(node_vec) < 2:
                 continue
             osmid2embeddings[osmid] = node_vec
     return osmid2embeddings
 
 
 def extract_samples(travel_samples_file, osmid_embeddings):
-    zero_list = [0 for i in range(128)]
+    zero_list = [0 for i in range(input_dim)]
     for item in travel_samples_file:
         target = float(item[-1])
         if target < 100 or target > 1100:
@@ -76,7 +78,7 @@ class lstm_reg(nn.Module):
         return x
 
 
-model = lstm_reg(128, 100)
+model = lstm_reg(input_dim, 100)
 model.to(device)
 criterion = nn.L1Loss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
